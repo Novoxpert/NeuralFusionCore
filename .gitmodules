@@ -1,0 +1,3 @@
+[submodule "apps/TimesNet"]
+	path = apps/TimesNet
+	url = https://github.com/Novoxpert/Time-Series-Library.git
