@@ -58,7 +58,7 @@ $$
 
 Two-term loss:
 
-1. **Sharpe Ratio Loss** (maximize risk-adjusted return):
+1. **Sharpe Ratio Loss** (maximize risk-adjusted return):  
 $$
 \mathcal{L}_{\text{Sharpe}} = - \frac{\mathbb{E}[R_p]}{\sqrt{\operatorname{Var}(R_p) + \epsilon}}
 $$
@@ -109,7 +109,8 @@ $$
 
 Install:
 ```bash
-pip install torch transformers numpy pandas matplotlib scikit-learn
+   pip install torch transformers numpy pandas matplotlib scikit-learn
+```
 ---
 
 ## Outputs
