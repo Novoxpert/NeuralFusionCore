@@ -1,6 +1,8 @@
 
 from dataclasses import dataclass, field
 import os
+from dotenv import load_dotenv
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 def rel_path(*paths):
     """Helper: build an absolute path relative to BASE_DIR"""
@@ -101,29 +103,30 @@ class BacktestCfg:
     stoploss: int = 5
     takeprofit: int = 5
 
+# Load environment variables from .env file
+load_dotenv()
+
 @dataclass
 class MongoCfg:
-    MONGO_HOST : str = '5.75.195.167'
-    MONGO_PORT : int = 27017
-    MONGO_DB : str = 'novoxpert'
-    MONGO_COLLECTION : str ='news'
-    MONGO_USER : str = 'StreamNode1'
-    MONGO_PASS : str = "‌Block2#InTerCoM!"
-    MONGO_AUTHSOURCE: str = 'novoxpert' 
+    MONGO_HOST: str = os.getenv("MONGO_HOST")
+    MONGO_PORT: int = int(os.getenv("MONGO_PORT", 27017))
+    MONGO_DB: str = os.getenv("MONGO_DB")
+    MONGO_COLLECTION: str = os.getenv("MONGO_COLLECTION")
+    MONGO_USER: str = os.getenv("MONGO_USER")
+    MONGO_PASS: str = os.getenv("MONGO_PASS")
+    MONGO_AUTHSOURCE: str = os.getenv("MONGO_AUTHSOURCE")
 
 @dataclass
 class ClickhouseCfg:
-    CH_HOST : str = '65.109.201.152'
-    #CH_PORT : int = 8123
-    CH_PORT : int = 9000
-    CH_DB : str ='novoxpert'
-    CH_TABLE : str ='tradingview_ohlcv'
-    CH_USER : str = 'StreamNode1'
-    CH_PASS : str = '‌Block2#InTerCoM!'
+    CH_HOST: str = os.getenv("CH_HOST")
+    CH_PORT: int = int(os.getenv("CH_PORT", 9000))
+    CH_DB: str = os.getenv("CH_DB")
+    CH_TABLE: str = os.getenv("CH_TABLE")
+    CH_USER: str = os.getenv("CH_USER")
+    CH_PASS: str = os.getenv("CH_PASS")
 
 @dataclass
 class RedisCfg:
-    host: str = 'localhost'
-    port: int = 6379
-    db : int = 0
-
+    host: str = os.getenv("REDIS_HOST", "localhost")
+    port: int = int(os.getenv("REDIS_PORT", 6379))
+    db: int = int(os.getenv("REDIS_DB", 0))
