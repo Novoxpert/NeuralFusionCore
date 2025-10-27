@@ -58,18 +58,21 @@ $$
 
 Two-term loss:
 
-1. **Sharpe Ratio Loss** (maximize risk-adjusted return):  
+1. **Sharpe Ratio Loss** (maximize risk-adjusted return):
+
 $$
 \mathcal{L}_{\text{Sharpe}} = - \frac{\mathbb{E}[R_p]}{\sqrt{\operatorname{Var}(R_p) + \epsilon}}
 $$
 
 2. **Distribution Regularizer** on weights (prevents concentration):  
-   - e.g., negative entropy, L2 concentration, or KL divergence to uniform  
+   e.g., negative entropy, L2 concentration, or KL divergence to uniform
+
 $$
 \mathcal{L}_{\text{dist}} = \lambda \cdot f(w_t)
 $$
 
 **Total Loss:**
+
 $$
 \mathcal{L} = \mathcal{L}_{\text{Sharpe}} + \mathcal{L}_{\text{dist}}
 $$
