@@ -1,4 +1,4 @@
-# NeuralFusionCore
+# NeuralFusion
 
 ---
 
