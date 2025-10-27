@@ -36,13 +36,13 @@ CGA lets each stream attend to the other **via gates** that modulate information
 - Compute **cross‑attention** in both directions (N→M and M→N).  
 - Apply **gates** (sigmoid/tanh) to the attended features before adding residuals:
 
-\[
+$$
 \tilde{N} = g_N \odot \text{Attn}(N \rightarrow M) + (1-g_N) \odot N
-\]
+$$
 
-\[
+$$
 \tilde{M} = g_M \odot \text{Attn}(M \rightarrow N) + (1-g_M) \odot M
-\]
+$$
 
 - Concatenate or sum \(\tilde{N}\) and \(\tilde{M}\) to form the **fused embedding**.
 
@@ -56,23 +56,23 @@ CGA lets each stream attend to the other **via gates** that modulate information
 
 ## Training Objective
 
-Two‑term loss:
+Two-term loss:
 
 1. **Sharpe Ratio Loss** (maximize risk-adjusted return):
-\[
+$$
 \mathcal{L}_{\text{Sharpe}} = - \frac{\mathbb{E}[R_p]}{\sqrt{\operatorname{Var}(R_p) + \epsilon}}
-\]
+$$
 
 2. **Distribution Regularizer** on weights (prevents concentration):  
    - e.g., negative entropy, L2 concentration, or KL divergence to uniform  
-\[
+$$
 \mathcal{L}_{\text{dist}} = \lambda \cdot f(w_t)
-\]
+$$
 
 **Total Loss:**
-\[
+$$
 \mathcal{L} = \mathcal{L}_{\text{Sharpe}} + \mathcal{L}_{\text{dist}}
-\]
+$$
 
 ---
 
@@ -110,8 +110,6 @@ Two‑term loss:
 Install:
 ```bash
 pip install torch transformers numpy pandas matplotlib scikit-learn
-
-
 ---
 
 ## Outputs
