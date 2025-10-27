@@ -2,55 +2,55 @@
 
 ---
 
-# Direct Portfolio Weight Forecasting with News + OHLCV (Cross‑Gated **Attention** Fusion)
+# Direct Portfolio Weight Forecasting with News + OHLCV (Cross‑Gated Attention Fusion)
 
 This variant directly forecasts **portfolio weights** using multi‑modal inputs (news + OHLCV) and fuses the streams with **Cross‑Gated Attention (CGA)**.  
-CGA lets each stream attend to the other **via gates** that modulate information flow, improving robustness compared to naive concatenation.
+CGA lets each stream attend to the other via gates that modulate information flow, improving robustness over naive concatenation.
 
 ---
 
 ## Architecture Overview
 
 - **Timeframe:** 3‑minute bars  
-- **Input Window:** 80 timestamps (≈ 4 hours)  
-- **Prediction Horizon:** next 80 timestamps (≈ 4 hours)  
+- **Input Window:** 80 timestamps (~4 hours)  
+- **Prediction Horizon:** next 80 timestamps (~4 hours)  
 - **Assets:** configurable universe
 
 ### Encoders
 
 1. **News stream (single LSTM)**  
-   - Each article → **BigBird** embedding  
-   - Per bar: **average** embeddings of all articles in that 3‑min window  
+   - Each article → **BigBird embedding**  
+   - **Average embeddings** of all articles per 3-min window  
    - If no news: use learned **[NO_NEWS]** embedding  
-   - **Coverage one‑hot** (which stocks are mentioned) is **concatenated** to the news embedding at each timestamp  
-   - The combined sequence is fed to **one LSTM** → produces news sequence embedding  
+   - **Coverage one-hot** (which stocks are mentioned) is concatenated to the news embedding at each timestamp  
+   - The sequence is fed to **one LSTM** → produces news sequence embedding  
 
 2. **OHLCV stream (TimesNet)**  
-   - A **TimesNetBlock** processes per‑asset OHLCV sequences → produces market embedding  
+   - A **TimesNetBlock** processes per-asset OHLCV sequences → produces market embedding  
 
 ---
 
-### Fusion — Cross‑Gated **Attention** (CGA)
+### Fusion — Cross‑Gated Attention (CGA)
 
-- Let **N** be the news embedding and **M** the market (OHLCV) embedding.  
-- Compute **cross‑attention** in both directions (N→M and M→N).  
+- Let **N** be the news embedding and **M** the market (OHLCV) embedding  
+- Compute **cross‑attention** in both directions (N→M and M→N)  
 - Apply **gates** (sigmoid/tanh) to the attended features before adding residuals:
 
-$$
+```math
 \tilde{N} = g_N \odot \text{Attn}(N \rightarrow M) + (1-g_N) \odot N
-$$
+````
 
-$$
+```math
 \tilde{M} = g_M \odot \text{Attn}(M \rightarrow N) + (1-g_M) \odot M
-$$
+```
 
-- Concatenate or sum \(\tilde{N}\) and \(\tilde{M}\) to form the **fused embedding**.
+* Concatenate or sum (\tilde{N}) and (\tilde{M}) to form the **fused embedding**
 
 ---
 
 ### Output Head
 
-- A linear layer maps the fused embedding to **portfolio weights** for all assets.
+* A linear layer maps the fused embedding to **portfolio weights** for all assets
 
 ---
 
@@ -60,78 +60,101 @@ Two-term loss:
 
 1. **Sharpe Ratio Loss** (maximize risk-adjusted return):
 
-$$
+```math
 \mathcal{L}_{\text{Sharpe}} = - \frac{E[R_p]}{\sqrt{Var(R_p) + \epsilon}}
-$$
+```
 
-2. **Distribution Regularizer** on weights (prevents concentration):  
+2. **Distribution Regularizer** on weights (prevents concentration):
    e.g., negative entropy, L2 concentration, or KL divergence to uniform
 
-$$
+```math
 \mathcal{L}_{\text{dist}} = \lambda \cdot f(w_t)
-$$
+```
 
 **Total Loss:**
 
-$$
+```math
 \mathcal{L} = \mathcal{L}_{\text{Sharpe}} + \mathcal{L}_{\text{dist}}
-$$
+```
 
 ---
 
 ## Portfolio Construction (Test Phase)
 
-- Use **predicted weights** directly  
-- Optional **top‑k selection**:  
-  1. Keep top‑k assets by absolute weight  
+* Use **predicted weights** directly
+* Optional **top‑k selection**:
+
+  1. Keep top‑k assets by absolute weight
   2. Re-normalize to sum to 1 (long-only) or L1=1 (long/short)
 
 ---
 
 ## How to Run
 
-1. Prepare data:  
-   - **OHLCV** (3‑min bars) aligned across assets  
-   - **News** table with text + **asset coverage one‑hot**  
-2. Open the notebook for this CGA variant and configure paths/hyperparameters  
-3. Train:  
-   - Select best checkpoint by **validation Sharpe**  
-4. Test:  
-   - Predict weights across test period  
-   - Apply **top‑k** if desired  
-   - Evaluate portfolio metrics  
+1. Prepare data:
+
+   * **OHLCV** (3‑min bars) aligned across assets
+   * **News** table with text + **asset coverage one-hot**
+2. Open the notebook for this CGA variant and configure paths/hyperparameters
+3. Train:
+
+   * Select the best checkpoint based on **validation Sharpe ratio**
+4. Test:
+
+   * Predict weights across test period
+   * Apply **top‑k** if desired
+   * Evaluate portfolio metrics
 
 ---
 
 ## Dependencies
 
-- Python 3.10+  
-- PyTorch 2.x  
-- Hugging Face `transformers` (BigBird)  
-- numpy, pandas, matplotlib, scikit-learn  
+* Python 3.10+
+* PyTorch 2.x
+* Hugging Face `transformers` (BigBird)
+* numpy, pandas, matplotlib, scikit-learn
 
 Install:
+
 ```bash
-   pip install torch transformers numpy pandas matplotlib scikit-learn
+pip install torch transformers numpy pandas matplotlib scikit-learn
 ```
+
 ---
 
 ## Outputs
 
-- Predicted weights per timestamp
-- Performance metrics:
-  - Sharpe ratio
-  - Cumulative P&L
-  - Max Drawdown
-  - Turnover
-- Plots: equity curve, rolling Sharpe, weights heatmap
+* Predicted weights per timestamp
+* Performance metrics:
+
+  * Sharpe ratio
+  * Cumulative P&L
+  * Max Drawdown
+  * Turnover
+* Plots: equity curve, rolling Sharpe, weights heatmap
 
 ---
 
 ## Notes
 
-- **CGA** allows **directional, gated cross‑attention** between news and market signals.
-- The **distribution loss** helps prevent one‑asset collapse.
+* **CGA** allows **directional, gated cross‑attention** between news and market signals
+* The **distribution loss** helps prevent one-asset collapse
+* **Total Loss** combines Sharpe ratio maximization and distribution regularization
 
 ---
 
+## Appendix
+
+### Upstream Repositories
+
+Influential upstream repositories:
+
+* [**BigBird**](https://github.com/google-research/bigbird): A sparse-attention transformer model enabling efficient processing of longer sequences
+* [**finBERT**](https://github.com/ProsusAI/finBERT): A pre-trained NLP model fine-tuned for financial sentiment analysis
+* [**Time-Series-Library (TSlib)**](https://github.com/thuml/Time-Series-Library): Library providing deep learning-based time series analysis, covering forecasting, anomaly detection, and classification
+
+### Inspiration
+
+This work is inspired by the article:
+
+* [**Stock Movement Prediction with Multimodal Stable Fusion via Gated Cross-Attention Mechanism**](https://arxiv.org/abs/2406.06594): Introduces the Multimodal Stable Fusion with Gated Cross-Attention (MSGCA) architecture, designed to robustly integrate multimodal inputs for stock movement prediction.
