@@ -61,7 +61,7 @@ Two-term loss:
 1. **Sharpe Ratio Loss** (maximize risk-adjusted return):
 
 $$
-\mathcal{L}_{\text{Sharpe}} = - \frac{\mathbb{E}[R_p]}{\sqrt{\operatorname{Var}(R_p) + \epsilon}}
+\mathcal{L}_{\text{Sharpe}} = - \frac{E[R_p]}{\sqrt{Var(R_p) + \epsilon}}
 $$
 
 2. **Distribution Regularizer** on weights (prevents concentration):  
