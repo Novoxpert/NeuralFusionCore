@@ -9,29 +9,29 @@ CGA lets each stream attend to the other via gates that modulate information flo
 ## 📋 Table of Contents
 
 - [Direct Portfolio Weight Forecasting](#direct-portfolio-weight-forecasting-with-news--ohlcv-cross-gated-attention-fusion)
-- [🏗️ Architecture Overview](#-architecture-overview)
+- [Architecture Overview](#-architecture-overview)
   - [Encoders](#encoders)
   - [Fusion — Cross-Gated Attention (CGA)](#fusion--cross-gated-attention-cga)
   - [Output Head](#output-head)
-- [🎯 Training Objective](#training-objective)
+- [Training Objective](#training-objective)
   - [Portfolio Weighting (Top-k Long/Short)](#portfolio-weighting-top-k-longshort)
   - [Sharpe Ratio Loss](#sharpe-ratio-loss-maximize-risk-adjusted-return)
   - [Regularization Terms](#regularization-terms)
   - [Total Loss](#total-loss)
-- [📁 Repository Layout](#-repository-layout-exact)
-- [⚙️ Setup](#-setup)
-- [🧩 Script Cheat-Sheet](#-script-cheat-sheet)
-- [🚀 Pipeline (Direct Weights)](#-pipeline-direct-weights)
-- [📦 Dependencies](#dependencies)
-- [📊 Outputs](#outputs)
-- [🧠 Notes](#notes)
-- [📚 Appendix](#appendix)
+- [Repository Layout](#-repository-layout-exact)
+- [Setup](#-setup)
+- [Script Cheat-Sheet](#-script-cheat-sheet)
+- [Pipeline (Direct Weights)](#-pipeline-direct-weights)
+- [Dependencies](#dependencies)
+- [Outputs](#outputs)
+- [Notes](#notes)
+- [Appendix](#appendix)
   - [Upstream Repositories](#upstream-repositories)
   - [Inspiration](#inspiration)
-- [👥 Authors & Citation](#-authors--citation)
-- [📞 Support](#-support)
+- [Authors & Citation](#-authors--citation)
+- [Support](#-support)
 ---
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 - **Timeframe:** 3‑minute bars  
 - **Input Window:** 80 timestamps (~4 hours)  
@@ -227,7 +227,7 @@ pip install -r requirements.txt
 ```
 
 ---
-## 🧩 Script Cheat‑Sheet
+## Script Cheat‑Sheet
 
 - **`lib/*.py`** — internal modules for datasets, models, features, news embeddings,training loops, utilities, and backtesting specialized for direct weights.  
 - **`config.py`** — central configuration / argument helpers used by the scripts.
@@ -270,7 +270,7 @@ python -m scripts.prediction_service --hours 4
 ```
 - **`scripts/api_service.py`** — create API for Get NeuralFusion weights from Mongodb.
 ---
-## 🚀 Pipeline (Direct Weights)
+## Pipeline (Direct Weights)
 
 #### 1) run data_ingest_service
 #### 2) run features_service
