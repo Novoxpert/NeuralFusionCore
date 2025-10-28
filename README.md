@@ -1,6 +1,4 @@
-# NeuralFusionCore
-
-## Direct Portfolio Weight Forecasting with (News + OHLCV) Cross‑Gated Attention Fusion
+# NeuralFusionCore: Direct Portfolio Weight Forecasting with Cross‑Gated Attention Fusion
 
 This variant directly forecasts **portfolio weights** using multi‑modal inputs (news + OHLCV) and fuses the streams with **Cross‑Gated Attention (CGA)**.  
 CGA lets each stream attend to the other via gates that modulate information flow, improving robustness over naive concatenation.
