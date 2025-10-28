@@ -270,10 +270,10 @@ python -m scripts.prediction_service --hours 4
 ---
 ## Pipeline (Direct Weights)
 
-#### 1) run data_ingest_service
-#### 2) run features_service
-#### 3) run train_service
-#### 4) run prediction_service
+##### 1) run data_ingest_service
+##### 2) run features_service
+##### 3) run train_service
+##### 4) run prediction_service
 ---
 
 ## Dependencies
