@@ -6,7 +6,7 @@ This variant directly forecasts **portfolio weights** using multi‑modal inputs
 CGA lets each stream attend to the other via gates that modulate information flow, improving robustness over naive concatenation.
 
 ---
-## 📋 Table of Contents
+## Table of Contents
 
 - [Direct Portfolio Weight Forecasting](#direct-portfolio-weight-forecasting-with-news--ohlcv-cross-gated-attention-fusion)
 - [Architecture Overview](#-architecture-overview)
@@ -166,7 +166,7 @@ $$
 - $\lambda_{\text{div}}, \lambda_{\text{net}}, \lambda_{\text{turnover}}$ control the regularization strength.
 ---
 
-## 📁 Repository Layout (exact)
+## Repository Layout
 ```
 NeuralFusionCore/
      ├── data/
@@ -204,7 +204,7 @@ NeuralFusionCore/
 
 ---
 
-## ⚙️ Setup
+## Setup
 
 ```bash
 
@@ -233,7 +233,7 @@ pip install -r requirements.txt
 - **`config.py`** — central configuration / argument helpers used by the scripts.
 - **`scripts/data_ingest_service.py`** — fetch OHLCV from ClickHouse and news from Mongo for the given interval, and push results (per-symbol ohlcv DataFrame pickles and news DataFrame) to Redis.
 
-🔧 Usage examples:
+Usage examples:
 one-shot latest 4h (use scheduler to run every 4h)
 ```bash
 python -m scripts.data_ingest_service --mode latest --hours 4
@@ -247,24 +247,24 @@ Modes:
   - bridge:    build features for ChronobBridge only
   - time:      select data by start_time/end_time for any mode
 
-🔧 Usage Examples:
+Usage Examples:
 ```bash
 python -m scripts.features_service --mode finetune --latest_hours 24
 ```
 - **`scripts/train_service.py`** — Train from scratch on processed/train.parquet and processed/val.parquet
-🔧 Usage Example:
+Usage Example:
 ```bash
 python -m scripts.train_service --epocha 50 
 ```
 - **`scripts/finetune_service.py`** —Fine-tune an existing saved model using the latest features. If validation loss improves, replace saved model and keep previous version with timestamp.
 
-🔧 Usage Example:
+Usage Example:
 ```bash
 python -m scripts.finetune_service --epocha 10 --save_best
 ```
 - **`scripts/prediction_service.py`** —Scheduled inference: fetch latest data, compute features, infer model, transform logits into portfolio weights, and save predictions to MongoDB and Redis.
 
-🔧 Usage Example:
+Usage Example:
 ```bash
 python -m scripts.prediction_service --hours 4 
 ```
@@ -322,7 +322,7 @@ This work is inspired by the article:
 
 * [**Stock Movement Prediction with Multimodal Stable Fusion via Gated Cross-Attention Mechanism**](https://arxiv.org/abs/2406.06594): Introduces the Multimodal Stable Fusion with Gated Cross-Attention (MSGCA) architecture, designed to robustly integrate multimodal inputs for stock movement prediction.
 ---
-## 👥 Authors & Citation
+## Authors & Citation
 
 **Developed by the [Novoxpert Research Team](https://github.com/Novoxpert)**  
 Lead Contributors:
@@ -344,7 +344,7 @@ If you use this repository or build upon our work, please cite:
 }
 ```
 ---
-## 📞 Support
+## Support
 
 - **Issues & Bugs**: [Open on GitHub](https://github.com/Novoxpert/neuralfusioncore/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/Novoxpert/neuralfusioncore/discussions)
