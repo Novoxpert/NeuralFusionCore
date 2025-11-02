@@ -45,9 +45,9 @@ def main():
     #Configs
     configs = {
         'task_name': 'classification',
-        'seq_len': 10,
+        'seq_len': F.seq_len,
         'enc_in': ts_in_dim ,
-        'd_model': 64,
+        'd_model': T.d_model,
         'c_out':2, #len(selected_f),
         'd_ff': 128,
         'num_kernels': 3,
