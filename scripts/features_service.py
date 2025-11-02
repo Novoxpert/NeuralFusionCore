@@ -15,6 +15,7 @@ Examples:
   python features_service.py --mode train --history_days 30 --val_frac 0.2
   python features_service.py --mode finetune --latest_hours 24
   python features_service.py --mode inference --latest_hours 4
+  python features_service.py --mode synchrone --latest_hours 4
   python features_service.py --mode train --start_time "2025-10-01T00:00" --end_time "2025-10-02T00:00"
 
 Author: Elham Esmaeilnia(elham.e.shirvani@gmail.com)
@@ -157,7 +158,7 @@ def time_split_and_save(merged, val_frac=0.2, mode="train"):
         df_va.to_parquet(os.path.join(P.processed_dir, 'finetune_val.parquet'), index=False)
         logging.info("Saved finetune train/val parquet files.")
 
-    elif mode == "back_testing":
+    elif mode == "backtesting":
         logging.info("Mode: BACK_TESTING → Fitting new normalizer...")
         n = len(merged)
         val_frac = 0.2
@@ -185,7 +186,7 @@ def time_split_and_save(merged, val_frac=0.2, mode="train"):
         # save parquet
         df_tr.to_parquet(os.path.join(P.processed_backtesting_dir, 'backtesting_train.parquet'), index=False)
         df_va.to_parquet(os.path.join(P.processed_backtesting_dir, 'backtesting_val.parquet'), index=False)
-        df_te.to_parquet(os.path.join(P.processed_backtesting_dir, 'backtesting_val.parquet'), index=False)
+        df_te.to_parquet(os.path.join(P.processed_backtesting_dir, 'backtesting_test.parquet'), index=False)
 
     elif mode == "inference":
         logging.info("Mode: INFERENCE → Reusing existing normalizer...")
@@ -218,6 +219,28 @@ def time_split_and_save(merged, val_frac=0.2, mode="train"):
         online_bridge_not_norm_path = os.path.join(P.processed_dir, "online_bridge_not_norm.parquet")
         merged_not_norm.to_parquet(online_bridge_not_norm_path, index=False)
         logging.info(f"Saved bridge parquet file: {online_bridge_not_norm_path}")
+    elif mode == "synchrone":
+        logging.info("Mode: synchrone → Reusing existing normalizer...")
+        merged_not_norm = merged.fillna(0).copy()
+        # Drop columns that end with 'open', 'high', or 'low'
+        merged = merged.drop(
+            columns=[col for col in merged.columns if col.endswith(("open", "high", "low"))]
+        )
+        merged_norm = F.apply_existing_normalizer(
+            df=merged.fillna(0),
+            feature_cols=feat_cols,
+            normalizer_path=P.normalizer_pkl
+        )
+        # Save online_test.parquet and online_bridge.parquet
+        online_path = os.path.join(P.processed_dir, "online_test.parquet")
+        merged_norm.to_parquet(online_path, index=False)
+        logging.info(f"Saved inference parquet file: {online_path}")
+        online_bridge_path = os.path.join(P.processed_dir, "online_bridge.parquet")
+        merged_norm.to_parquet(online_bridge_path, index=False)
+        logging.info(f"Saved bridge parquet file: {online_bridge_path}")
+        online_bridge_not_norm_path = os.path.join(P.processed_dir, "online_bridge_not_norm.parquet")
+        merged_not_norm.to_parquet(online_bridge_not_norm_path, index=False)
+        logging.info(f"Saved bridge parquet file: {online_bridge_not_norm_path}")
 
     else:
         logging.error(f"Mode {mode} not recognized.")
@@ -232,13 +255,12 @@ def parse_time_args(start_time_str, end_time_str):
         end_time = pd.to_datetime(end_time_str)
     return start_time, end_time
 
-
 # ----------------------------------------------------------------------
 def main():
      
     start_service_time= time.time()
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", type=str, choices=["train", "finetune", "inference", "bridge", "back_testing", "future_testing"], required=True)
+    parser.add_argument("--mode", type=str, choices=["train", "finetune", "inference", "bridge", "synchrone", "backtesting", "future_testing"], required=True)
     parser.add_argument("--latest_hours", type=int, default=None)
     parser.add_argument("--history_days", type=int, default=None)
     parser.add_argument("--start_time", type=str, default=None)
