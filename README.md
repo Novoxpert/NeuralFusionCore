@@ -195,6 +195,7 @@ NeuralFusionCore/
           ├── train_service.py
           ├── finetune_service.py
           ├── prediction_service.py 
+          ├── backtesting_service.py
           └── api_service.py
 
 ```
@@ -265,6 +266,12 @@ python -m scripts.finetune_service --epocha 10 --save_best
 Usage Example:
 ```bash
 python -m scripts.prediction_service --hours 4 
+```
+- **`scripts/backtesting_service.py`** —Backtesting & Model Evaluation Service for Market-News Fusion Model.
+
+Usage Example:
+```bash
+python -m scripts.backtesting_service --epochs 50 --mode fetch --hours 12 
 ```
 - **`scripts/api_service.py`** — create API for Get NeuralFusion weights from Mongodb.
 ---
