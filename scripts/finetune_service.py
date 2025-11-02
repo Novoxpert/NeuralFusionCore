@@ -60,7 +60,7 @@ def main():
     count_dim = len(cnt_cols) if cnt_cols else 0
     configs = {
         'task_name': 'classification',
-        'seq_len': 10,
+        'seq_len': F.seq_len,
         'enc_in': len(feat_cols) ,
         'd_model': 64,
         'c_out':2, #len(selected_f),
