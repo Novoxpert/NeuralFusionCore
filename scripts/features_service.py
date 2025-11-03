@@ -5,11 +5,14 @@ features_service.py
 Builds features from Redis.
 
 Modes:
-  - train:     full rebuild (includes normalizer + meta)
-  - finetune:  incremental build (reuse existing normalizer/meta)
-  - inference: build features for inference only (produces online_test.parquet)
-  - bridge:    build features for ChronobBridge only
-  - time:      select data by start_time/end_time for any mode
+  - train:          full rebuild (includes normalizer + meta)
+  - finetune:       incremental build (reuse existing normalizer/meta)
+  - inference:      build features for inference only (produces online_test.parquet)
+  - bridge:         build features for ChronobBridge only
+  - synchrone:      build synchrone features for ChronobBridge and NeuralFusionCore 
+  - backtesting:    build features for back testing the models
+  - future_testing: build features for testing the model in realtime market
+  - time:           select data by start_time/end_time for any mode
 
 Examples:
   python features_service.py --mode train --history_days 30 --val_frac 0.2
@@ -61,7 +64,7 @@ def make_features_from_redis(start_time=None, end_time=None, no_news_vec=None, m
 
     # --- ensure all symbols exist ---
     for sym in MC.symbols_usdt:
-        if mode == 'bridge':
+        if mode == 'bridge' or mode == 'synchrone' or mode == 'future_testing':
             cols_needed = [f"{sym}_{c}" for c in
                        ["open","high","low","close", "volume", "prev_return", "prev_volatility", "return", "volatility", "target_return"]]
         else:
@@ -200,6 +203,45 @@ def time_split_and_save(merged, val_frac=0.2, mode="train"):
         merged_norm.to_parquet(online_path, index=False)
         logging.info(f"Saved inference parquet file: {online_path}")
 
+    elif mode == "future_testing":
+        logging.info("Mode: Future testing→ Reusing existing normalizer...")
+        merged_not_norm = merged.fillna(0).copy()
+        keep = {'dateTime','_open','_high','_low','_close','_volume','_prev_return','_prev_volatility',
+        '_return','_volatility','_target_return','t3'}
+
+        # Filter columns
+        filtered_cols = [col for col in merged_not_norm.columns 
+                 if (col in keep or any(col.endswith(k) for k in keep)) 
+                 and col != 'embedding']
+
+        merged_not_norm = merged_not_norm[filtered_cols]
+
+        # Drop columns that end with 'open', 'high', or 'low'
+        merged = merged.drop(
+            columns=[col for col in merged.columns if col.endswith(("open", "high", "low"))]
+        )
+        merged_norm = F.apply_existing_normalizer(
+            df=merged.fillna(0),
+            feature_cols=feat_cols,
+            normalizer_path=P.normalizer_pkl
+        )
+
+        keep = {'dateTime','_close','_volume','_prev_return','_prev_volatility',
+        '_return','_volatility','_target_return','t3'}
+        # Filter columns
+        filtered_cols = [col for col in merged_norm.columns 
+                 if (col in keep or any(col.endswith(k) for k in keep)) 
+                 and col != 'embedding']
+        merged_norm = merged_norm[filtered_cols]
+       
+        # Save online_metric.parquet
+        online_metric_path = os.path.join(P.processed_dir, "online_metric.parquet")
+        merged_norm.to_parquet(online_metric_path, index=False)
+        logging.info(f"Saved metric parquet file: {online_metric_path}")
+        online_metric_not_norm_path = os.path.join(P.processed_dir, "online_metric_not_norm.parquet")
+        merged_not_norm.to_parquet(online_metric_not_norm_path, index=False)
+        logging.info(f"Saved metric parquet file: {online_metric_not_norm_path}")
+
     elif mode == "bridge":
         logging.info("Mode: BRIDGE → Reusing existing normalizer...")
         merged_not_norm = merged.fillna(0).copy()
@@ -219,6 +261,7 @@ def time_split_and_save(merged, val_frac=0.2, mode="train"):
         online_bridge_not_norm_path = os.path.join(P.processed_dir, "online_bridge_not_norm.parquet")
         merged_not_norm.to_parquet(online_bridge_not_norm_path, index=False)
         logging.info(f"Saved bridge parquet file: {online_bridge_not_norm_path}")
+
     elif mode == "synchrone":
         logging.info("Mode: synchrone → Reusing existing normalizer...")
         merged_not_norm = merged.fillna(0).copy()
