@@ -17,7 +17,8 @@ from bson import ObjectId, json_util
 from datetime import datetime, timezone
 import uvicorn
 import json
-
+from ..config import NOVOMongoCfg
+NMO = NOVOMongoCfg();
 # -------------------- App & CORS --------------------
 app = FastAPI(title="Portfolio API")
 
@@ -35,9 +36,11 @@ app.add_middleware(
 )
 
 # -------------------- MongoDB --------------------
-client = MongoClient("mongodb://127.0.0.1:27017/")
-db = client["portfolio_db"]
-collection = db["NeuralFusionCore_predictions"]
+mongo_client = MongoClient(host=NMO.NOVO_MONGO_HOST, port=NMO.NOVO_MONGO_PORT,
+                          username=NMO.NOVO_MONGO_USER, password=NMO.NOVO_MONGO_PASS,
+                          authSource=getattr(NMO, 'NOVO_MONGO_AUTH_DB', NMO.NOVO_MONGO_DB))
+mongo_db = mongo_client[NMO.NOVO_MONGO_DB]
+collection = mongo_db["NeuralFusionCore_predictions"]
 
 # -------------------- Helpers --------------------
 def serialize_doc(doc):

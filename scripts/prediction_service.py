@@ -64,19 +64,21 @@ Version: 1.2.0
 import os, sys, subprocess, logging, pickle, torch, numpy as np, pandas as pd, json
 from datetime import datetime, timezone
 from pymongo import MongoClient
-from ..config import Paths, FeatureCfg, MarketCfg, TrainCfg, BacktestCfg
+from ..config import Paths, FeatureCfg, MarketCfg, TrainCfg, BacktestCfg, NOVOMongoCfg
 from ..lib.model import MarketNewsFusionWeightModel
 from ..lib.dataset import make_loaders
 from ..lib.backtest_weights import backtest_weight_logits, weights_long_short_topk_abs
 from ..lib.redis_utils import redis_client
 import time
 
-P = Paths(); F = FeatureCfg(); MC = MarketCfg(); T = TrainCfg(); B = BacktestCfg()
+P = Paths(); F = FeatureCfg(); MC = MarketCfg(); T = TrainCfg(); B = BacktestCfg(); NMO = NOVOMongoCfg();
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
 
 # --------------------------- MongoDB setup ---------------------------
-mongo_client = MongoClient("mongodb://localhost:27017/")
-mongo_db = mongo_client["portfolio_db"]
+mongo_client = MongoClient(host=NMO.NOVO_MONGO_HOST, port=NMO.NOVO_MONGO_PORT,
+                          username=NMO.NOVO_MONGO_USER, password=NMO.NOVO_MONGO_PASS,
+                          authSource=getattr(NMO, 'NOVO_MONGO_AUTH_DB', NMO.NOVO_MONGO_DB))
+mongo_db = mongo_client[NMO.NOVO_MONGO_DB]
 mongo_col = mongo_db["NeuralFusionCore_predictions"]
 
 # --------------------------- Data ingest & feature service ---------------------------
