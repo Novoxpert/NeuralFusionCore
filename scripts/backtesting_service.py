@@ -171,7 +171,39 @@ def load_model(feat_dim, num_stocks, count_dim, device):
 
     model.eval()
     return model
+# ================================================================
+#   Compute weights and equity
+# ================================================================
+def safe_backtest_weight_logits(pred_logits, returns_matrix, dates, k=T.top_k, gross=T.gross, stride=B.stride):
+        M, N = pred_logits.shape
+        T_steps = returns_matrix.shape[0]
+        
+        # Compute weights
+        with torch.no_grad():
+            logits_t = torch.tensor(pred_logits, dtype=torch.float32)
+            w_t = weights_long_short_topk_abs(logits_t, k=k, gross=gross).cpu().numpy()
+        
+        # Forward-fill weights to match all time steps
+        w_series = np.zeros((T_steps, N), dtype=float)
+        idxs = list(range(0, T_steps, stride))
+        for j, t0 in enumerate(idxs):
+            end_idx = idxs[j + 1] if j + 1 < len(idxs) else T_steps
+            w_series[t0:end_idx, :] = w_t[min(j, M-1)]
+        
+        # Compute portfolio returns
+        rp = (w_series * returns_matrix).sum(axis=1)
+        equity = rp.cumsum()
+        equity = equity - equity[0] + 1  # Start at 1
 
+        # Save portfolio dataframe
+        df_portfolio = pd.DataFrame({'dateTime': dates})
+        for i, sym in enumerate(MarketCfg().symbols_usdt):
+            df_portfolio[f"{sym}_return"] = returns_matrix[:, i]
+            df_portfolio[f"{sym}_weight"] = w_series[:, i]
+        
+        df_portfolio.to_pickle(os.path.join(P.outputs_dir, 'df_portfolio.pickle'))
+        
+        return {'dates': dates, 'equity': equity, 'rp': rp, 'weights': w_series}
 # ================================================================
 #   MAIN
 # ================================================================
@@ -255,38 +287,6 @@ def main():
     ret_cols = [f"{s}_target_return" for s in stock_list]
     rets = df_te_valid[ret_cols].to_numpy(float)
     dates = pd.to_datetime(df_te_valid["dateTime"])
-
-    # ---- Compute weights and equity ----
-    def safe_backtest_weight_logits(pred_logits, returns_matrix, dates, k=T.top_k, gross=T.gross, stride=B.stride):
-        M, N = pred_logits.shape
-        T_steps = returns_matrix.shape[0]
-        
-        # Compute weights
-        with torch.no_grad():
-            logits_t = torch.tensor(pred_logits, dtype=torch.float32)
-            w_t = weights_long_short_topk_abs(logits_t, k=k, gross=gross).cpu().numpy()
-        
-        # Forward-fill weights to match all time steps
-        w_series = np.zeros((T_steps, N), dtype=float)
-        idxs = list(range(0, T_steps, stride))
-        for j, t0 in enumerate(idxs):
-            end_idx = idxs[j + 1] if j + 1 < len(idxs) else T_steps
-            w_series[t0:end_idx, :] = w_t[min(j, M-1)]
-        
-        # Compute portfolio returns
-        rp = (w_series * returns_matrix).sum(axis=1)
-        equity = rp.cumsum()
-        equity = equity - equity[0] + 1  # Start at 1
-
-        # Save portfolio dataframe
-        df_portfolio = pd.DataFrame({'dateTime': dates})
-        for i, sym in enumerate(MarketCfg().symbols_usdt):
-            df_portfolio[f"{sym}_return"] = returns_matrix[:, i]
-            df_portfolio[f"{sym}_weight"] = w_series[:, i]
-        
-        df_portfolio.to_pickle(os.path.join(P.outputs_dir, 'df_portfolio.pickle'))
-        
-        return {'dates': dates, 'equity': equity, 'rp': rp, 'weights': w_series}
 
     # Run backtest
     curves = safe_backtest_weight_logits(logits_full, rets, dates)
