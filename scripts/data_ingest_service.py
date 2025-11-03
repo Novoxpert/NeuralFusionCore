@@ -2,9 +2,16 @@
 data_ingest_service.py
 Stateless fetcher: fetch OHLCV from ClickHouse and news from Mongo for the given interval,
 and push results (per-symbol ohlcv DataFrame pickles and news DataFrame) to Redis.
+
+Modes:
+  - latest:       fetch last hours data from DBs and save to redis
+  - historical:   fetch historical days data from DBs and save  to redis
+  - custom:       fetch data from DBs in custom time period
+
 Usage examples:
   # historical: fetch last 30 days and save to disk (also push latest window to Redis)
   python data_ingest_service.py --mode historical --days 30 --save_dir data/ohlcv_history
+  python data_ingest_service.py --mode custom  --start_time "2025-02-26 00:00:00"  --end_time "2025-02-27 00:00:00"
 
   # one-shot latest 4h (use scheduler to run every 4h)
   python data_ingest_service.py --mode latest --hours 4
@@ -28,9 +35,19 @@ CH = ClickhouseCfg(); MO = MongoCfg(); RE = RedisCfg(); P = Paths(); MC = Market
 
 ch_client = CHClient(host=CH.CH_HOST, port=CH.CH_PORT, user=CH.CH_USER,
                      password=CH.CH_PASS, database=CH.CH_DB)
-mongo_client = MongoClient(host=MO.MONGO_HOST, port=MO.MONGO_PORT,
-                          username=MO.MONGO_USER, password=MO.MONGO_PASS,
-                          authSource=getattr(MO, 'MONGO_AUTHSOURCE', MO.MONGO_DB))
+mongo_kwargs = {
+    "host": MO.MONGO_HOST,
+    "port": MO.MONGO_PORT
+}
+
+if MO.MONGO_USER and MO.MONGO_PASS:
+    mongo_kwargs.update({
+        "username": MO.MONGO_USER,
+        "password": MO.MONGO_PASS,
+        "authSource": MO.MONGO_AUTHSOURCE or MO.MONGO_DB
+    })
+mongo_client = MongoClient(**mongo_kwargs)
+
 redis_client = Redis(host=RE.host, port=RE.port, db=RE.db)
 
 def fetch_ohlcv_range(symbol, start_utc, end_utc):
@@ -78,9 +95,11 @@ def push_news_to_redis(df):
 def main():
     start_service_time= time.time()
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=["historical", "latest"], required=True)
+    parser.add_argument("--mode", choices=["historical", "latest", "custom"], required=True)
     parser.add_argument("--days", type=int, default=30, help="for historical mode")
     parser.add_argument("--hours", type=int, default=4, help="for latest mode")
+    parser.add_argument("--start_time", type=str, help='UTC start time format: "YYYY-MM-DD HH:MM:SS"')
+    parser.add_argument("--end_time", type=str, help='UTC end time format: "YYYY-MM-DD HH:MM:SS"')
     parser.add_argument("--save_dir", type=str, default=None, help="optional dir to save historical files")
     args = parser.parse_args()
 
@@ -130,6 +149,28 @@ def main():
         print(f"Time elapsed for data ingestion service: {end_service_time - start_service_time:.2f} seconds")
         return
     
+    # custom mode (explicit start & end)
+    if args.mode == "custom":
+        start = datetime.fromisoformat(args.start_time).replace(tzinfo=timezone.utc)
+        end = datetime.fromisoformat(args.end_time).replace(tzinfo=timezone.utc)
 
+        logging.info(f"Fetching custom data range: {start} to {end}")
+
+        symbols_ch = [f"{s}" for s in MC.symbols_usdt]
+
+        for sym in symbols_ch:
+            df = fetch_ohlcv_range(sym, start, end)
+            if not df.empty:
+                push_ohlcv_to_redis(sym, df)
+
+        # ✅ Fetch and push news
+        df_news = fetch_news_range(start, end)
+        if not df_news.empty:
+            push_news_to_redis(df_news)
+        logging.info("Custom ingest complete.")
+        end_service_time = time.time()
+        print(f"Time elapsed for data ingestion service: {end_service_time - start_service_time:.2f} seconds")
+        return
+    
 if __name__ == "__main__":
     main()
