@@ -9,7 +9,7 @@ def add_targets_and_features(df3m, fwd_h, seq_len, per_asset_features, symbol, m
     df['prev_return'] = 100*((df['close']/df['close'].shift(seq_len)) - 1)
     df['volatility'] = 100*df['close'].rolling(seq_len).std().shift(-seq_len)
     df['prev_volatility'] = 100*df['close'].rolling(seq_len).std()
-    if mode=="bridge" or mode=="synchrone" or mode=="future_testing":
+    if mode=="bridge" or mode=="synchronize" or mode=="future_testing":
         keep = {'open','high','low','close','volume','prev_return','prev_volatility','return','volatility'}
     else:
         keep = {'close','volume','prev_return','prev_volatility','return','volatility'}
