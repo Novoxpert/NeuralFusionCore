@@ -9,16 +9,16 @@ Modes:
   - finetune:       incremental build (reuse existing normalizer/meta)
   - inference:      build features for inference only (produces online_test.parquet)
   - bridge:         build features for ChronobBridge only
-  - synchrone:      build synchrone features for ChronobBridge and NeuralFusionCore 
+  - synchronize:    build synced features for ChronobBridge and NeuralFusionCore 
   - backtesting:    build features for back testing the models
-  - future_testing: build features for testing the model in realtime market
+  - future_testing: build features for forward-looking in live tesing
   - time:           select data by start_time/end_time for any mode
 
 Examples:
   python features_service.py --mode train --history_days 30 --val_frac 0.2
   python features_service.py --mode finetune --latest_hours 24
   python features_service.py --mode inference --latest_hours 4
-  python features_service.py --mode synchrone --latest_hours 4
+  python features_service.py --mode synchronize --latest_hours 4
   python features_service.py --mode train --start_time "2025-10-01T00:00" --end_time "2025-10-02T00:00"
 
 Author: Elham Esmaeilnia(elham.e.shirvani@gmail.com)
@@ -64,16 +64,22 @@ def make_features_from_redis(start_time=None, end_time=None, no_news_vec=None, m
 
     # --- ensure all symbols exist ---
     for sym in MC.symbols_usdt:
-        if mode == 'bridge' or mode == 'synchrone' or mode == 'future_testing':
+        if mode == 'bridge' or mode == 'synchronize' or mode == 'future_testing':
             cols_needed = [f"{sym}_{c}" for c in
                        ["open","high","low","close", "volume", "prev_return", "prev_volatility", "return", "volatility", "target_return"]]
         else:
             cols_needed = [f"{sym}_{c}" for c in
                         ["close", "volume", "prev_return", "prev_volatility", "return", "volatility", "target_return"]]
-        for c in cols_needed:
-            if c not in merged.columns:
-                merged[c] = 0.0
+        
+        # Get only the missing columns
+        missing_cols = [c for c in cols_needed if c not in merged.columns]
 
+        # Create a DataFrame of zeros for missing columns
+        if missing_cols:
+            zeros_df = pd.DataFrame(0.0, index=merged.index, columns=missing_cols)
+            merged = pd.concat([merged, zeros_df], axis=1)
+            
+    merged = merged.copy()
     #---- add timesnet features---
     tcols = F.make_time_cols(merged)
     merged = pd.concat([merged, tcols], axis=1)
@@ -262,8 +268,8 @@ def time_split_and_save(merged, val_frac=0.2, mode="train"):
         merged_not_norm.to_parquet(online_bridge_not_norm_path, index=False)
         logging.info(f"Saved bridge parquet file: {online_bridge_not_norm_path}")
 
-    elif mode == "synchrone":
-        logging.info("Mode: synchrone → Reusing existing normalizer...")
+    elif mode == "synchronize":
+        logging.info("Mode: synchronize → Reusing existing normalizer...")
         merged_not_norm = merged.fillna(0).copy()
         # Drop columns that end with 'open', 'high', or 'low'
         merged = merged.drop(
@@ -303,7 +309,7 @@ def main():
      
     start_service_time= time.time()
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", type=str, choices=["train", "finetune", "inference", "bridge", "synchrone", "backtesting", "future_testing"], required=True)
+    parser.add_argument("--mode", type=str, choices=["train", "finetune", "inference", "bridge", "synchronize", "backtesting", "future_testing"], required=True)
     parser.add_argument("--latest_hours", type=int, default=None)
     parser.add_argument("--history_days", type=int, default=None)
     parser.add_argument("--start_time", type=str, default=None)

@@ -29,7 +29,7 @@ Usage
 -----
 Run end-to-end pipeline (data ingest → features → inference → save):
 
-    python3 prediction_service.py --hours 4 --device cpu --mode synchrone
+    python3 prediction_service.py --hours 4 --device cpu --mode synchronize
 
 Run inference only (assumes latest features already exist):
 
@@ -43,10 +43,10 @@ Arguments
 --device : str, default="cpu"  
     Compute device (`cpu` or `cuda`).
 
---mode : {"synchrone", "inference"}, default="synchrone"  
+--mode : {"synchronize", "inference"}, default="synchronize"  
     Execution type:
-      inference  – Fetch data, build features, infer, save outputs
-      synchrone  – Only run inference + saving (data assumed prepared)
+      inference    – Fetch data, build features, infer, save outputs
+      synchronize  – Only run inference + saving (data assumed prepared)
 
 Environment
 -----------
@@ -128,7 +128,7 @@ def load_model(configs, feat_cols_len, stock_list_len, count_dim, device='cpu'):
     return model
 
 # --------------------------- Inference ---------------------------
-def run_inference(df_tr, df_va, df_te, feat_cols, data_stamp_cols, stock_list, cnt_cols, device='cpu', mode='synchrone'):
+def run_inference(df_tr, df_va, df_te, feat_cols, data_stamp_cols, stock_list, cnt_cols, device='cpu', mode='synchronize'):
     _, _, te_loader = make_loaders(df_tr, df_va, df_te, F.seq_len, F.horizon_steps,
                                    feat_cols, data_stamp_cols, stock_list, cnt_cols, bs=T.batch_size)
     
@@ -155,7 +155,7 @@ def run_inference(df_tr, df_va, df_te, feat_cols, data_stamp_cols, stock_list, c
     all_predictions = []
    
     with torch.no_grad():
-        if mode == 'synchrone':
+        if mode == 'synchronize':
             # only take the last seq_len rows for a single prediction
             df_seq = df_te.iloc[-F.seq_len:]
             ts_t = torch.tensor(df_seq[feat_cols].values.astype(np.float32)).unsqueeze(0).to(device)
@@ -223,7 +223,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--hours", type=int, default=4, help="How many past hours of data to fetch")
     parser.add_argument("--device", type=str, default='cpu')
-    parser.add_argument("--mode", type=str,  default="synchrone", choices=["synchrone", "inference"], help="Execution mode")
+    parser.add_argument("--mode", type=str,  default="synchronize", choices=["synchronize", "inference"], help="Execution mode")
     args = parser.parse_args()
 
     if args.mode == "inference":
