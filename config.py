@@ -99,7 +99,7 @@ class LossCfg:
 
 @dataclass
 class BacktestCfg:
-    stride: int = 80
+    stride: int = 5
     stoploss: int = 5
     takeprofit: int = 5
 
@@ -130,3 +130,12 @@ class RedisCfg:
     host: str = os.getenv("REDIS_HOST", "localhost")
     port: int = int(os.getenv("REDIS_PORT", 6379))
     db: int = int(os.getenv("REDIS_DB", 0))
+
+@dataclass
+class NOVOMongoCfg:
+    NOVO_MONGO_HOST: str = os.getenv("NOVO_MONGO_HOST")
+    NOVO_MONGO_PORT: int = int(os.getenv("NOVO_MONGO_PORT", 27017))
+    NOVO_MONGO_DB: str = os.getenv("NOVO_MONGO_DB")
+    NOVO_MONGO_USER: str = os.getenv("NOVO_MONGO_USER")
+    NOVO_MONGO_PASS: str = os.getenv("NOVO_MONGO_PASS")
+    NOVO_MONGO_AUTH_DB: str = os.getenv("NOVO_MONGO_AUTH_DB")
