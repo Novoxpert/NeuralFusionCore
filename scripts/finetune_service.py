@@ -10,14 +10,33 @@ Author: Elham Esmaeilnia(elham.e.shirvani@gmail.com)
 Date: 2025 Oct 04
 Version: 1.1.0
 """
-import logging, os, json, shutil, torch
+import logging, os, json, shutil, torch,sys
 from datetime import datetime
 import pandas as pd
-from ..config import Paths, TrainCfg, FeatureCfg, LossCfg, MarketCfg
-from ..lib.model import MarketNewsFusionWeightModel
-from ..lib.train import train_loop
-from ..lib.dataset import make_loaders
-from ..lib.redis_utils import atomic_model_swap  # utility to replace model atomically
+
+# --- Universal import fix (works standalone or as submodule) ---
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+NEURAL_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
+PARENT = os.path.basename(os.path.dirname(NEURAL_DIR))
+
+if PARENT == "apps":  # running inside AlphaFusionNet/apps/
+    ROOT = os.path.abspath(os.path.join(NEURAL_DIR, "..", ".."))
+    sys.path.insert(0, ROOT)
+else:  # running as standalone NeuralFusionCore repo
+    sys.path.insert(0, NEURAL_DIR)
+
+try:
+    from apps.NeuralFusionCore.config import Paths, TrainCfg, FeatureCfg, LossCfg, MarketCfg
+    from apps.NeuralFusionCore.lib.model import MarketNewsFusionWeightModel
+    from apps.NeuralFusionCore.lib.train import train_loop
+    from apps.NeuralFusionCore.lib.dataset import make_loaders
+    from apps.NeuralFusionCore.lib.utils import atomic_model_swap  # utility to replace model atomically
+except ImportError:
+    from ..config import Paths, TrainCfg, FeatureCfg, LossCfg, MarketCfg
+    from ..lib.model import MarketNewsFusionWeightModel
+    from ..lib.train import train_loop
+    from ..lib.dataset import make_loaders
+    from ..lib.utils import atomic_model_swap  
 
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
 P = Paths(); T = TrainCfg(); F = FeatureCfg(); L = LossCfg(); MC = MarketCfg()

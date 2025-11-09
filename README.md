@@ -177,12 +177,8 @@ NeuralFusionCore/
      │   ├── backtest.py
      │   ├── backtest_weights.py        
      │   ├── dataset.py
-     │   ├── features.py
      │   ├── loss_weights.py            
-     │   ├── market.py
      │   ├── model.py
-     │   ├── news.py
-     │   ├── redis_utils.py
      │   ├── train.py
      │   └── utils.py
      ├──_init__.py
@@ -190,8 +186,6 @@ NeuralFusionCore/
      ├── requirements.txt
      ├── config.py
      └── scripts/
-          ├── data_ingest_service.py
-          ├── features_service.py
           ├── train_service.py
           ├── finetune_service.py
           ├── prediction_service.py 
@@ -228,28 +222,8 @@ pip install -r requirements.txt
 ---
 ## Script Cheat‑Sheet
 
-- **`lib/*.py`** — internal modules for datasets, models, features, news embeddings,training loops, utilities, and backtesting specialized for direct weights.  
+- **`lib/*.py`** — internal modules for datasets, models,training loops, utilities, and backtesting specialized for direct weights.  
 - **`config.py`** — central configuration / argument helpers used by the scripts.
-- **`scripts/data_ingest_service.py`** — fetch OHLCV from ClickHouse and news from Mongo for the given interval, and push results (per-symbol ohlcv DataFrame pickles and news DataFrame) to Redis.
-
-Usage examples:
-one-shot latest 4h (use scheduler to run every 4h)
-```bash
-python -m scripts.data_ingest_service --mode latest --hours 4
-```
-- **`scripts/features_service.py`** — Builds features from Redis.
-
-Modes:
-  - train:     full rebuild (includes normalizer + meta)
-  - finetune:  incremental build (reuse existing normalizer/meta)
-  - inference: build features for inference only (produces online_test.parquet)
-  - bridge:    build features for ChronobBridge only
-  - time:      select data by start_time/end_time for any mode
-
-Usage Examples:
-```bash
-python -m scripts.features_service --mode finetune --latest_hours 24
-```
 - **`scripts/train_service.py`** — Train from scratch on processed/train.parquet and processed/val.parquet
 Usage Example:
 ```bash
@@ -330,10 +304,6 @@ This work is inspired by the article:
 ## Authors & Citation
 
 **Developed by the [Novoxpert Research Team](https://github.com/Novoxpert)**  
-Lead Contributors:
- - [Elham Esmaeilnia](https://github.com/Elham-Esmaeilnia), [Hamidreza Naeini](https://github.com/)
- 
-
 If you use this repository or build upon our work, please cite:
 
 > Novoxpert Research (2025). *NeuralFusionCore: Direct Portfolio Weight Forecasting with Cross-Gated Attention Fusion.*  

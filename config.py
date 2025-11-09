@@ -3,37 +3,33 @@ from dataclasses import dataclass, field
 import os
 from dotenv import load_dotenv
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+# --- Determine base directory ---
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+SIBLING_CHRONOBRIDGE = os.path.abspath(os.path.join(CURRENT_DIR, "..", "ChronoBridge"))
+
+if os.path.exists(SIBLING_CHRONOBRIDGE):
+    BASE_DIR = SIBLING_CHRONOBRIDGE
+else:
+    BASE_DIR = CURRENT_DIR
+
+# --- Helper to create absolute paths relative to BASE_DIR ---
 def rel_path(*paths):
-    """Helper: build an absolute path relative to BASE_DIR"""
     return os.path.join(BASE_DIR, *paths)
-@dataclass
-class Paths:
-    data_dir: str = rel_path("data")
-    raw_news_dir: str = rel_path("data/raw_news")
-    ohlcv_dir: str = rel_path("data/ohlcv")
-    data_realtime_dir: str = rel_path("data_realtime")
-    ohlcv_realtime_dir: str = rel_path("data_realtime/ohlcv")
-    news_realtime_dir: str = rel_path("data_realtime/news")
-    processed_dir: str = rel_path("data/processed")
-    processed_backtesting_dir: str = rel_path("data/processed/backtesting")
-    outputs_dir: str = rel_path("data/outputs")
-    news_pickle: str = rel_path("data/processed/news_embeddings.pkl")
-    news_no_vec_pickle: str = rel_path("data/processed/news_no_vec_embeddings.pkl")
-    merged_parquet: str = rel_path("data/processed/merged_3m.parquet")
-    normalizer_pkl: str = rel_path("data/processed/normalizer.pkl")
-    normalizer_backtesting_pkl: str = rel_path("data/processed/backtesting/normalizer.pkl")
-    splits_json: str = rel_path("data/processed/splits.json")
-    weights_pt: str = rel_path("data/outputs/model_weights.pt")
+
+def rel_current_path(*paths):
+    """Helper: build an absolute path relative to CURRENT_DIR"""
+    return os.path.join(CURRENT_DIR, *paths)
 
 @dataclass
-class NewsCfg:
-    model_path: str = rel_path("models/bigbird-2048-final/bigbird-2048-final")
-    batch_size: int = 2
-    max_len: int = 2048
-    pooling: str = "mean"
-    rule: str = "3min"
-    no_news_token: str = "no news at this time"
+class Paths:
+    processed_dir: str = rel_path("data/processed")
+    processed_backtesting_dir: str = rel_path("data/processed/backtesting")
+    normalizer_pkl: str = rel_path("data/processed/normalizer.pkl")
+    normalizer_backtesting_pkl: str = rel_path("data/processed/backtesting/normalizer.pkl")
+    outputs_dir: str = rel_current_path("data/outputs")
+    weights_pt: str = rel_current_path("data/outputs/model_weights.pt")
 
 @dataclass
 class MarketCfg:
@@ -45,8 +41,6 @@ class MarketCfg:
         'TVC:UKX', 'FX:EURUSD', 'FX_IDC:USDJPY', 'OANDA:XAUUSD', 'BIST:XAGUSD1!', 'CBOE:VIX'      
     ])
     timeframe: str = "1m"
-    start_date: str = "2025-02-26"
-    end_date: str = "2025-03-01"
 
 @dataclass
 class FeatureCfg:
