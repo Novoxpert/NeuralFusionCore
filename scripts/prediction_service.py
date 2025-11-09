@@ -52,7 +52,6 @@ Environment
 -----------
 Requires access to:
 - MongoDB (for persistent logs)
-- Redis (for low-latency serving of latest predictions)
 - Trained model weight file
 - Preprocessed parquet + metadata files produced by the pipeline
 
@@ -64,12 +63,29 @@ Version: 1.2.0
 import os, sys, subprocess, logging, pickle, torch, numpy as np, pandas as pd, json
 from datetime import datetime, timezone
 from pymongo import MongoClient
-from ..config import Paths, FeatureCfg, MarketCfg, TrainCfg, BacktestCfg, NOVOMongoCfg
-from ..lib.model import MarketNewsFusionWeightModel
-from ..lib.dataset import make_loaders
-from ..lib.backtest_weights import backtest_weight_logits, weights_long_short_topk_abs
-from ..lib.redis_utils import redis_client
 import time
+from dotenv import load_dotenv
+load_dotenv()
+# --- Universal import fix (works standalone or as submodule) ---
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+NEURAL_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
+PARENT = os.path.basename(os.path.dirname(NEURAL_DIR))
+
+if PARENT == "apps":  # running inside AlphaFusionNet/apps/
+    ROOT = os.path.abspath(os.path.join(NEURAL_DIR, "..", ".."))
+    sys.path.insert(0, ROOT)
+else:  # running as standalone NeuralFusionCore repo
+    sys.path.insert(0, NEURAL_DIR)
+try:    
+    from apps.NeuralFusionCore.config import Paths, FeatureCfg, MarketCfg, TrainCfg, BacktestCfg, NOVOMongoCfg
+    from apps.NeuralFusionCore.lib.model import MarketNewsFusionWeightModel
+    from apps.NeuralFusionCore.lib.dataset import make_loaders
+    from apps.NeuralFusionCore.lib.backtest_weights import backtest_weight_logits, weights_long_short_topk_abs
+except ImportError:
+    from ..config import Paths, FeatureCfg, MarketCfg, TrainCfg, BacktestCfg, NOVOMongoCfg
+    from ..lib.model import MarketNewsFusionWeightModel
+    from ..lib.dataset import make_loaders
+    from ..lib.backtest_weights import backtest_weight_logits, weights_long_short_topk_abs
 
 P = Paths(); F = FeatureCfg(); MC = MarketCfg(); T = TrainCfg(); B = BacktestCfg(); NMO = NOVOMongoCfg();
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
@@ -84,11 +100,11 @@ mongo_col = mongo_db["NeuralFusionCore_predictions"]
 # --------------------------- Data ingest & feature service ---------------------------
 def run_data_ingest(hours):
     logging.info(f"Running data_ingest_service to fetch last {hours} hour(s) of data")
-    subprocess.run([sys.executable, '-m', 'apps.NeuralFusionCore.scripts.data_ingest_service', '--mode', 'latest', '--hours', str(hours)], check=True)
+    subprocess.run([sys.executable, '-m', 'apps.ChronoBridge.scripts.data_ingest_service', '--mode', 'latest', '--hours', str(hours)], check=True)
 
 def run_feature_service(hours):
     logging.info(f"Running features_service in INFERENCE mode for last {hours} hour(s)")
-    subprocess.run([sys.executable, '-m', 'apps.NeuralFusionCore.scripts.features_service', '--mode', 'inference', '--latest_hours', str(hours)], check=True)
+    subprocess.run([sys.executable, '-m', 'apps.ChronoBridge.scripts.features_service', '--mode', 'inference', '--latest_hours', str(hours)], check=True)
 
 # --------------------------- Model loader ---------------------------
 def load_model(configs, feat_cols_len, stock_list_len, count_dim, device='cpu'):
@@ -201,12 +217,9 @@ def save_predictions(predictions):
 
         payload = {"ts": ts_now, "weights": weights.tolist(), "stocks": stock_list}
 
-        # Save to Redis (latest only)
-        redis_client.set("predictions", pickle.dumps(payload))
-
         # Save to MongoDB
         mongo_col.insert_one(payload)
-
+        logging.info("Prediction save to MongoDB.")
         # Save to JSON file
         json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "NeuralFusionCore_prediction.json")
         try:
@@ -227,7 +240,7 @@ def main():
     args = parser.parse_args()
 
     if args.mode == "inference":
-        # Fetch latest data
+        # Fetch latest data 
         run_data_ingest(args.hours)
         run_feature_service(args.hours)
 

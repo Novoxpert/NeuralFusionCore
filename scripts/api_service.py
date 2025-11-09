@@ -16,8 +16,24 @@ from pymongo import MongoClient
 from bson import ObjectId, json_util
 from datetime import datetime, timezone
 import uvicorn
-import json
-from ..config import NOVOMongoCfg
+import json,sys,os 
+
+# --- Universal import fix (works standalone or as submodule) ---
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+NEURAL_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
+PARENT = os.path.basename(os.path.dirname(NEURAL_DIR))
+
+if PARENT == "apps":  # running inside AlphaFusionNet/apps/
+    ROOT = os.path.abspath(os.path.join(NEURAL_DIR, "..", ".."))
+    sys.path.insert(0, ROOT)
+else:  # running as standalone NeuralFusionCore repo
+    sys.path.insert(0, NEURAL_DIR)
+try:
+    from apps.NeuralFusionCore.config import NOVOMongoCfg
+except ImportError:
+    from ..config import NOVOMongoCfg
+
+
 NMO = NOVOMongoCfg();
 # -------------------- App & CORS --------------------
 app = FastAPI(title="Portfolio API")

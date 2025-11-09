@@ -39,18 +39,42 @@ Version : 1.3.1
 import os, sys, subprocess, logging, torch, numpy as np, pandas as pd, json
 import matplotlib.pyplot as plt
 import argparse
-from ..config import Paths, TrainCfg, FeatureCfg, BacktestCfg, MarketCfg, LossCfg
-from ..lib.model import MarketNewsFusionWeightModel
-from ..lib.dataset import make_loaders
-from ..lib.backtest_weights import backtest_weight_logits, weights_long_short_topk_abs
-from ..lib.utils import plot_equity
-from ..lib.train import train_loop
-from ..lib.backtest import (
-    backtest_sl_tp_per_asset,
-    summarize_curves as summarize_curves_sl,
-    plot_equity as plot_equity_sl
-)
 import time
+# --- Universal import fix (works standalone or as submodule) ---
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+NEURAL_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
+PARENT = os.path.basename(os.path.dirname(NEURAL_DIR))
+
+if PARENT == "apps":  # running inside AlphaFusionNet/apps/
+    ROOT = os.path.abspath(os.path.join(NEURAL_DIR, "..", ".."))
+    sys.path.insert(0, ROOT)
+else:  # running as standalone NeuralFusionCore repo
+    sys.path.insert(0, NEURAL_DIR)
+
+try:    
+    from apps.NeuralFusionCore.config import Paths, TrainCfg, FeatureCfg, BacktestCfg, MarketCfg, LossCfg
+    from apps.NeuralFusionCore.lib.model import MarketNewsFusionWeightModel
+    from apps.NeuralFusionCore.lib.dataset import make_loaders
+    from apps.NeuralFusionCore.lib.backtest_weights import backtest_weight_logits, weights_long_short_topk_abs
+    from apps.NeuralFusionCore.lib.utils import plot_equity
+    from apps.NeuralFusionCore.lib.train import train_loop
+    from apps.NeuralFusionCore.lib.backtest import (
+        backtest_sl_tp_per_asset,
+        summarize_curves as summarize_curves_sl,
+        plot_equity as plot_equity_sl
+    )
+except ImportError:
+    from ..config import Paths, TrainCfg, FeatureCfg, BacktestCfg, MarketCfg, LossCfg
+    from ..lib.model import MarketNewsFusionWeightModel
+    from ..lib.dataset import make_loaders
+    from ..lib.backtest_weights import backtest_weight_logits, weights_long_short_topk_abs
+    from ..lib.utils import plot_equity
+    from ..lib.train import train_loop
+    from ..lib.backtest import (
+        backtest_sl_tp_per_asset,
+        summarize_curves as summarize_curves_sl,
+        plot_equity as plot_equity_sl
+    )
 
 # ---- Configs ----
 P = Paths(); F = FeatureCfg(); MC = MarketCfg(); T = TrainCfg(); B = BacktestCfg(); L = LossCfg()
@@ -134,11 +158,11 @@ def plot_turnover(df, weight_cols, dates):
 # ================================================================
 def run_data_ingest(hours):
     logging.info(f"Running data_ingest_service to fetch last {hours} hour(s) of data")
-    subprocess.run([sys.executable, '-m', 'apps.NeuralFusionCore.scripts.data_ingest_service', '--mode', 'latest', '--hours', str(hours)], check=True)
+    subprocess.run([sys.executable, '-m', 'apps.ChronoBridge.scripts.data_ingest_service', '--mode', 'latest', '--hours', str(hours)], check=True)
 
 def run_feature_service(hours):
     logging.info(f"Running features_service in INFERENCE mode for last {hours} hour(s)")
-    subprocess.run([sys.executable, '-m', 'apps.NeuralFusionCore.scripts.features_service', '--mode', 'backtesting', '--latest_hours', str(hours)], check=True)
+    subprocess.run([sys.executable, '-m', 'apps.ChronoBridge.scripts.features_service', '--mode', 'backtesting', '--latest_hours', str(hours)], check=True)
 # ================================================================
 #   Load Model
 # ================================================================
@@ -213,7 +237,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", type=str, default="fetch",choices=["fetch", "use_saved"], help="Execution mode")
     parser.add_argument("--epochs", type=int, default=None)
-    parser.add_argument("--hours", type=int, default=4, help="How many past hours of data to fetch")
+    parser.add_argument("--hours", type=int, default=12, help="How many past hours of data to fetch")
     parser.add_argument("--device", type=str, default='cpu')
     args = parser.parse_args()
     if args.epochs:

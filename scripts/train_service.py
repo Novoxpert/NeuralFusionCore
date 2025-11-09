@@ -8,15 +8,33 @@ Author: Elham Esmaeilnia(elham.e.shirvani@gmail.com)
 Date: 2025 Sep 30
 Version: 1.0.1 
 """
-import logging, json, os
+import logging, json, os, sys
+import time
 import torch
 import pandas as pd
 import argparse
-from ..config import Paths, TrainCfg, FeatureCfg, LossCfg
-from ..lib.dataset import make_loaders
-from ..lib.model import MarketNewsFusionWeightModel
-from ..lib.train import train_loop
-import time
+
+# --- Universal import fix (works standalone or as submodule) ---
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+NEURAL_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
+PARENT = os.path.basename(os.path.dirname(NEURAL_DIR))
+
+if PARENT == "apps":  # running inside AlphaFusionNet/apps/
+    ROOT = os.path.abspath(os.path.join(NEURAL_DIR, "..", ".."))
+    sys.path.insert(0, ROOT)
+else:  # running as standalone NeuralFusionCore repo
+    sys.path.insert(0, NEURAL_DIR)
+try:
+    from apps.NeuralFusionCore.config import Paths, TrainCfg, FeatureCfg, LossCfg
+    from apps.NeuralFusionCore.lib.dataset import make_loaders
+    from apps.NeuralFusionCore.lib.model import MarketNewsFusionWeightModel
+    from apps.NeuralFusionCore.lib.train import train_loop
+except ImportError:    
+    from ..config import Paths, TrainCfg, FeatureCfg, LossCfg
+    from ..lib.dataset import make_loaders
+    from ..lib.model import MarketNewsFusionWeightModel
+    from ..lib.train import train_loop
+
 
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
 
@@ -24,6 +42,7 @@ def main():
     start_service_time= time.time()
     P = Paths(); T = TrainCfg(); F = FeatureCfg(); L = LossCfg()
     # load data
+    print(P.processed_dir)
     tr_path = os.path.join(P.processed_dir, 'train.parquet')
     va_path = os.path.join(P.processed_dir, 'val.parquet')
     meta_path = os.path.join(P.processed_dir, 'meta.json')
