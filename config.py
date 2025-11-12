@@ -48,8 +48,8 @@ class FeatureCfg:
         "open": "first", "high": "max", "low": "min", "close": "last",
         "volume": "sum"
     })
-    seq_len: int = 10
-    horizon_steps: int = 5
+    seq_len: int = 80
+    horizon_steps: int = 80
     news_rule: str = "3min"
     resample: int = 3
 
@@ -93,7 +93,7 @@ class LossCfg:
 
 @dataclass
 class BacktestCfg:
-    stride: int = 5
+    stride: int = 80
     stoploss: int = 5
     takeprofit: int = 5
 
