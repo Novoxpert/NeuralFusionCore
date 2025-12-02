@@ -146,7 +146,7 @@ def load_model(configs, feat_cols_len, stock_list_len, count_dim, device='cpu'):
 # --------------------------- Inference ---------------------------
 def run_inference(df_tr, df_va, df_te, feat_cols, data_stamp_cols, stock_list, cnt_cols, device='cpu', mode='synchronize'):
     _, _, te_loader = make_loaders(df_tr, df_va, df_te, F.seq_len, F.horizon_steps,
-                                   feat_cols, data_stamp_cols, stock_list, cnt_cols, bs=T.batch_size)
+                                   feat_cols, data_stamp_cols, stock_list, cnt_cols, bs=T.batch_size, inference_only=True)
     
     configs = {
         'task_name': 'classification',
@@ -259,8 +259,8 @@ def main():
     stock_list = meta['stock_list']
     cnt_cols = meta.get('count_cols', [])
 
-    # Use df_te as both train/val to satisfy make_loaders
-    df_tr = df_va = df_te.copy()
+    # Use both train/val None to satisfy make_loaders
+    df_tr = df_va = None
 
     # 4) Run inference & convert logits -> weights
     predictions = run_inference(df_tr, df_va, df_te, feat_cols, data_stamp_cols, stock_list, cnt_cols, device=args.device, mode=args.mode)
