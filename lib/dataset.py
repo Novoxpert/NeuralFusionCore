@@ -52,20 +52,106 @@ class WeightDataset(Dataset):
                     'target': torch.tensor(Y)
             }
 
-def make_loaders(df_tr, df_va, df_te, seq_len, horizon_steps, feature_cols, data_stamp_cols, stock_list, news_count_cols, bs):
-    # Skip datasets that are too short
-    if len(df_tr) <= seq_len + horizon_steps:
-        raise ValueError(f"Train dataset too short: {len(df_tr)} <= seq_len + horizon_steps ({seq_len + horizon_steps})")
-    if len(df_va) <= seq_len + horizon_steps:
-        raise ValueError(f"Val dataset too short: {len(df_va)} <= seq_len + horizon_steps ({seq_len + horizon_steps})")
-    ds_tr = WeightDataset(df_tr, seq_len, horizon_steps, feature_cols, data_stamp_cols, stock_list, news_count_cols=news_count_cols)
-    ds_va = WeightDataset(df_va, seq_len, horizon_steps, feature_cols, data_stamp_cols, stock_list, news_count_cols=news_count_cols)
-    # Only create test dataset if df_te is provided
-    if df_te is not None:
-        ds_te = WeightDataset(df_te, seq_len, horizon_steps, feature_cols, data_stamp_cols, stock_list, news_count_cols=news_count_cols, inference=True)
-        te_loader = DataLoader(ds_te, batch_size=bs, shuffle=False)
-    else:
-        te_loader = None
-    return (DataLoader(ds_tr, batch_size=bs, shuffle=True),
+def make_loaders(
+        df_tr,
+        df_va,
+        df_te,
+        seq_len,
+        horizon_steps,
+        feature_cols,
+        data_stamp_cols,
+        stock_list,
+        news_count_cols,
+        bs,
+        inference_only: bool = False,
+    ):
+        """
+        Create DataLoaders for train/val/test.
+
+        - Training mode (inference_only=False):
+            * Requires df_tr and df_va to be long enough.
+            * Optionally builds test loader if df_te is provided.
+
+        - Inference mode (inference_only=True):
+            * Ignores df_tr and df_va completely.
+            * Only builds a test loader from df_te with inference=True.
+            * No length checks; if df_te is too short, the loader just has 0 batches.
+        """
+
+        # -----------------------
+        # INFERENCE-ONLY MODE
+        # -----------------------
+        if inference_only:
+            if df_te is None:
+                raise ValueError("df_te must be provided when inference_only=True")
+
+            ds_te = WeightDataset(
+                df_te,
+                seq_len,
+                horizon_steps,
+                feature_cols,
+                data_stamp_cols,
+                stock_list,
+                news_count_cols=news_count_cols,
+                inference=True,
+            )
+            te_loader = DataLoader(ds_te, batch_size=bs, shuffle=False)
+            # No train/val loaders in prediction stage
+            return None, None, te_loader
+
+        # -----------------------
+        # TRAINING MODE
+        # -----------------------
+        # Skip datasets that are too short
+        if df_tr is None or len(df_tr) <= seq_len + horizon_steps:
+            raise ValueError(
+                f"Train dataset too short: {0 if df_tr is None else len(df_tr)} "
+                f"<= seq_len + horizon_steps ({seq_len + horizon_steps})"
+            )
+
+        if df_va is None or len(df_va) <= seq_len + horizon_steps:
+            raise ValueError(
+                f"Val dataset too short: {0 if df_va is None else len(df_va)} "
+                f"<= seq_len + horizon_steps ({seq_len + horizon_steps})"
+            )
+
+        ds_tr = WeightDataset(
+            df_tr,
+            seq_len,
+            horizon_steps,
+            feature_cols,
+            data_stamp_cols,
+            stock_list,
+            news_count_cols=news_count_cols,
+        )
+        ds_va = WeightDataset(
+            df_va,
+            seq_len,
+            horizon_steps,
+            feature_cols,
+            data_stamp_cols,
+            stock_list,
+            news_count_cols=news_count_cols,
+        )
+
+        # Only create test dataset if df_te is provided
+        if df_te is not None:
+            ds_te = WeightDataset(
+                df_te,
+                seq_len,
+                horizon_steps,
+                feature_cols,
+                data_stamp_cols,
+                stock_list,
+                news_count_cols=news_count_cols,
+                inference=True,
+            )
+            te_loader = DataLoader(ds_te, batch_size=bs, shuffle=False)
+        else:
+            te_loader = None
+
+        return (
+            DataLoader(ds_tr, batch_size=bs, shuffle=True),
             DataLoader(ds_va, batch_size=bs, shuffle=False),
-            te_loader)
+            te_loader,
+        )
